@@ -1,0 +1,9 @@
+[package]
+name = "puffy-sysctl"
+version = "0.1.0"
+authors = ["Jenn Wheeler <jwheeler@antiochcollege.edu>"]
+edition = "2018"
+
+[dependencies]
+libc = "0.2.50"
+nix = "0.13.0"
