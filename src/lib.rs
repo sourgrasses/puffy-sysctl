@@ -21,6 +21,7 @@ pub const DBCTL_TRIGGER: c_int = 8;
 pub const DBCTL_PROFILE: c_int = 9;
 pub const DBCTL_MAXID: c_int = 10;
 
+// vfs
 pub const FFS_CLUSTERREAD: c_int = 1;
 pub const FFS_CLUSTERWRITE: c_int = 2;
 pub const FFS_REALLOCBLKS: c_int = 3;
@@ -45,6 +46,7 @@ pub const FFS_MAXID: c_int = 20;
 pub const FS_POSIX: c_int = 1;
 pub const FS_POSIX_SETUID: c_int = 1;
 
+// hw
 pub const HW_MACHINE: c_int = 1;
 pub const HW_MODEL: c_int = 2;
 pub const HW_NCPU: c_int = 3;
@@ -72,6 +74,12 @@ pub const HW_PERFPOLICY: c_int = 23;
 pub const HW_SMT: c_int = 24;
 pub const HW_NCPUONLINE: c_int = 25;
 pub const HW_MAXID: c_int = 26;
+
+// net
+pub const AF_INET: c_int = 2;
+pub const AF_INET6: c_int = 24;
+pub const PF_INET: c_int = AF_INET;
+pub const PF_INET6: c_int = AF_INET6;
 
 pub const CTL_DEBUG_NAME: c_int = 0;
 pub const CTL_DEBUG_VALUE: c_int = 1;
@@ -386,6 +394,64 @@ fn parse_mib_net(names: &[String]) -> Result<Vec<c_int>> {
     let mut mib = Vec::new();
 
     match names[0].as_str() {
+        "route" => {
+            mib.push(PF_ROUTE);
+            // protocol number, always 0 for now
+            mib.push(0);
+            mib.push(get_addr_family(&names[2])?);
+            match names[3].as_str() {
+                "dump" => {
+                    mib.push(NET_RT_DUMP);
+                    if names.len() > 4 {
+                        // TODO: get table from args
+                        let table = 0;
+                        mib.push(table);
+                    } else {
+                        mib.push(0);
+                    }
+                },
+                "flags" => {
+                    mib.push(NET_RT_FLAGS);
+                    // TODO: push rtflags onto mib
+                },
+                "iflist" => mib.push(NET_RT_IFLIST),
+                "ifnames" => mib.push(NET_RT_IFNAMES),
+                "stats" => mib.push(NET_RT_STATS),
+                "table" => mib.push(NET_RT_TABLE),
+                _ => return Err(Error::invalid_argument()),
+            }
+        },
+        "inet" => {
+            mib.push(PF_INET);
+            match names[1].as_str() {
+                "ah" => unimplemented!(),
+                "bpf" => unimplemented!(),
+                "carp" => unimplemented!(),
+                "divert" => unimplemented!(),
+                "esp" => unimplemented!(),
+                "etherip" => unimplemented!(),
+                "gre" => unimplemented!(),
+                "icmp" => unimplemented!(),
+                "ip" => unimplemented!(),
+                "ipcomp" => unimplemented!(),
+                "ipip" => unimplemented!(),
+                "mobileip" => unimplemented!(),
+                "tcp" => unimplemented!(),
+                "udp" => unimplemented!(),
+                _ => return Err(Error::invalid_argument()),
+            }
+        },
+        "inet6" => {
+            mib.push(PF_INET6);
+            match names[1].as_str() {
+                "icmp6" => unimplemented!(),
+                "ip6" => unimplemented!(),
+                _ => return Err(Error::invalid_argument()),
+            }
+        },
+        "key" => mib.push(PF_KEY),
+        "mpls" => mib.push(PF_MPLS),
+        "pipex" => mib.push(PF_PIPEX),
         _ => return Err(Error::invalid_argument()),
     }
 
@@ -502,6 +568,47 @@ fn parse_mib_vfs(names: &[String]) -> Result<Vec<c_int>> {
     };
 
     Ok(mib)
+}
+
+pub fn get_addr_family(name: &str) -> Result<c_int> {
+    let af = match name {
+        "unix" => AF_UNIX,
+        "local" => AF_LOCAL,
+        "inet" => AF_INET,
+        "implink" => AF_IMPLINK,
+        "pup" => AF_PUP,
+        "chaos" => AF_CHAOS,
+        "ns" => AF_NS,
+        "iso" => AF_ISO,
+        "osi" => AF_OSI,
+        "ecma" => AF_ECMA,
+        "datakit" => AF_DATAKIT,
+        "ccitt" => AF_CCITT,
+        "sna" => AF_SNA,
+        "decnet" => AF_DECnet,
+        "dli" => AF_DLI,
+        "lat" => AF_LAT,
+        "hylink" => AF_HYLINK,
+        "appletalk" => AF_APPLETALK,
+        "route" => AF_ROUTE,
+        "link" => AF_LINK,
+        "coip" => AF_COIP,
+        "cnt" => AF_CNT,
+        "ipx" => AF_IPX,
+        "inet6" => AF_INET6,
+        "isdn" => AF_ISDN,
+        "e164" => AF_E164,
+        "natm" => AF_NATM,
+        "encap" => AF_ENCAP,
+        "sip" => AF_SIP,
+        "key" => AF_KEY,
+        "bluetooth" => AF_BLUETOOTH,
+        "mpls" => AF_MPLS,
+        "0" => 0,
+        _ => return Err(Error::invalid_argument()),
+    };
+
+    Ok(af)
 }
 
 #[cfg(test)]
