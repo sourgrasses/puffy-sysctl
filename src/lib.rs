@@ -421,36 +421,283 @@ fn parse_mib_net(names: &[String]) -> Result<Vec<c_int>> {
                 _ => return Err(Error::invalid_argument()),
             }
         },
+        // TODO: parse the args that can get passed here
         "inet" => {
             mib.push(PF_INET);
             match names[1].as_str() {
-                "ah" => unimplemented!(),
-                "bpf" => unimplemented!(),
-                "carp" => unimplemented!(),
-                "divert" => unimplemented!(),
-                "esp" => unimplemented!(),
-                "etherip" => unimplemented!(),
-                "gre" => unimplemented!(),
-                "icmp" => unimplemented!(),
-                "ip" => unimplemented!(),
-                "ipcomp" => unimplemented!(),
-                "ipip" => unimplemented!(),
-                "mobileip" => unimplemented!(),
-                "tcp" => unimplemented!(),
-                "udp" => unimplemented!(),
+                "ah" => {
+                    mib.push(IPPROTO_AH);
+                    match names[2].as_str() {
+                        "enable" => mib.push(1),
+                        "stats" => mib.push(2),
+                        _ => return Err(Error::invalid_argument()),
+                    }
+                },
+                "bpf" => {
+                    mib.push(pseudo_AF_HDRCMPLT);
+                    match names[2].as_str() {
+                        "bufsize" => mib.push(1),
+                        "maxbufsize" => mib.push(2),
+                        _ => return Err(Error::invalid_argument()),
+                    }
+                },
+                "carp" => {
+                    mib.push(IPPROTO_CARP);
+                    match names[2].as_str() {
+                        "allow" => mib.push(1),
+                        "log" => mib.push(3),
+                        "preempt" => mib.push(2),
+                        "stats" => mib.push(4),
+                        _ => return Err(Error::invalid_argument()),
+                    }
+                },
+                "divert" => {
+                    mib.push(IPPROTO_DIVERT);
+                    match names[2].as_str() {
+                        "recvspace" => mib.push(1),
+                        "sendspace" => mib.push(2),
+                        "stats" => mib.push(3),
+                        _ => return Err(Error::invalid_argument()),
+                    }
+                },
+                "esp" => {
+                    mib.push(IPPROTO_ESP);
+                    match names[2].as_str() {
+                        "enable" => mib.push(1),
+                        "udpencap" => mib.push(2),
+                        "udpencap_port" => mib.push(3),
+                        "stats" => mib.push(4),
+                        _ => return Err(Error::invalid_argument()),
+                    }
+                },
+                "etherip" => {
+                    mib.push(IPPROTO_ETHERIP);
+                    match names[2].as_str() {
+                        "allow" => mib.push(1),
+                        "stats" => mib.push(2),
+                        _ => return Err(Error::invalid_argument()),
+                    }
+                },
+                "gre" => {
+                    mib.push(IPPROTO_GRE);
+                    match names[2].as_str() {
+                        "allow" => mib.push(1),
+                        "wccp" => mib.push(2),
+                        _ => return Err(Error::invalid_argument()),
+                    }
+                },
+                "icmp" => {
+                    mib.push(IPPROTO_ICMP);
+                    match names[2].as_str() {
+                        "bmcastecho" => mib.push(2),
+                        "errppslimit" => mib.push(3),
+                        "maskrepl" => mib.push(1),
+                        "rediraccept" => mib.push(4),
+                        "redirtimeout" => mib.push(5),
+                        "stats" => mib.push(7),
+                        "tstamprepl" => mib.push(6),
+                        _ => return Err(Error::invalid_argument()),
+                    }
+                },
+                "ip" => {
+                    mib.push(IPPROTO_IP);
+                    match names[2].as_str() {
+                        "arpdown" => mib.push(40),
+                        "arptimeout" => mib.push(39),
+                        "directed-broadcast" => mib.push(6),
+                        "encdebug" => mib.push(12),
+                        "forwarding" => mib.push(1),
+                        "ifq" => {
+                            mib.push(30);
+                            match names[3].as_str() {
+                                "congestion" => mib.push(4),
+                                "drops" => mib.push(3),
+                                "len" => mib.push(1),
+                                "maxlen" => mib.push(2),
+                                _ => return Err(Error::invalid_argument()),
+                            }
+                        },
+                        "ipsec-allocs" => mib.push(18),
+                        "ipsec-auth-alg" => mib.push(26),
+                        "ipsec-bytes" => mib.push(20),
+                        "ipsec-comp-alg" => mib.push(29),
+                        "ipsec-enc-alg" => mib.push(25),
+                        "ipsec-expire-acquire" => mib.push(14),
+                        "ipsec-firstuse" => mib.push(24),
+                        "ipsec-invalid-life" => mib.push(15),
+                        "ipsec-pfs" => mib.push(16),
+                        "ipsec-soft-allocs" => mib.push(17),
+                        "ipsec-soft-bytes" => mib.push(19),
+                        "ipsec-soft-firstuse" => mib.push(23),
+                        "ipsec-soft-timeout" => mib.push(22),
+                        "ipsec-timeout" => mib.push(21),
+                        "maxqueue" => mib.push(11),
+                        "mforwarding" => mib.push(31),
+                        "mtudisc" => mib.push(27),
+                        "mtudisctimeout" => mib.push(28),
+                        "multipath" => mib.push(32),
+                        "portfirst" => mib.push(7),
+                        "pirthifirst" => mib.push(9),
+                        "porthilast" => mib.push(10),
+                        "portlast" => mib.push(8),
+                        "redirect" => mib.push(2),
+                        "sourceroute" => mib.push(5),
+                        "stats" => mib.push(33),
+                        "ttl" => mib.push(3),
+                        _ => return Err(Error::invalid_argument()),
+                    }
+                },
+                "ipcomp" => {
+                    mib.push(IPPROTO_IPCOMP);
+                    match names[2].as_str() {
+                        "enable" => mib.push(1),
+                        "stats" => mib.push(2),
+                        _ => return Err(Error::invalid_argument()),
+                    }
+                },
+                "ipip" => {
+                    mib.push(IPPROTO_IPIP);
+                    match names[2].as_str() {
+                        "allow" => mib.push(1),
+                        "stats" => mib.push(2),
+                        _ => return Err(Error::invalid_argument()),
+                    }
+                },
+                "mobileip" => {
+                    mib.push(IPPROTO_MOBILE);
+                    match names[2].as_str() {
+                        "allow" => mib.push(1),
+                        _ => return Err(Error::invalid_argument()),
+                    }
+                },
+                "tcp" => {
+                    mib.push(IPPROTO_TCP);
+                    match names[2].as_str() {
+                        "ackonpush" => mib.push(13),
+                        "always_keepalive" => mib.push(16),
+                        "baddynamic" => mib.push(6),
+                        "drop" => mib.push(19),
+                        "ecn" => mib.push(14),
+                        "ident" => mib.push(9),
+                        "keepidle" => mib.push(3),
+                        "keepinittime" => mib.push(2),
+                        "keepintvl" => mib.push(4),
+                        "mssdflt" => mib.push(11),
+                        "reasslimit" => mib.push(18),
+                        "rfc1323" => mib.push(1),
+                        "rfc3390" => mib.push(17),
+                        "rootonly" => mib.push(24),
+                        "rstppslimit" => mib.push(12),
+                        "sack" => mib.push(10),
+                        "sackholelimit" => mib.push(20),
+                        "slowhz" => mib.push(5),
+                        "stats" => mib.push(21),
+                        "synbucketlimit" => mib.push(16),
+                        "syncachelimit" => mib.push(15),
+                        "synhashsize" => mib.push(25),
+                        "synuselimit" => mib.push(23),
+                        _ => return Err(Error::invalid_argument()),
+                    }
+                },
+                "udp" => {
+                    mib.push(IPPROTO_UDP);
+                    match names[2].as_str() {
+                        "baddynamic" => mib.push(2),
+                        "checksum" => mib.push(1),
+                        "recvspace" => mib.push(3),
+                        "rootonly" => mib.push(6),
+                        "sendspace" => mib.push(4),
+                        "stats" => mib.push(5),
+                        _ => return Err(Error::invalid_argument()),
+                    }
+                },
                 _ => return Err(Error::invalid_argument()),
             }
         },
         "inet6" => {
             mib.push(PF_INET6);
             match names[1].as_str() {
-                "icmp6" => unimplemented!(),
-                "ip6" => unimplemented!(),
+                "divert" => {
+                    mib.push(IPPROTO_DIVERT);
+                    match names[2].as_str() {
+                        "recvspace" => mib.push(1),
+                        "sendspace" => mib.push(2),
+                        "stats" => mib.push(3),
+                        _ => return Err(Error::invalid_argument()),
+                    }
+                },
+                "icmp6" => {
+                    mib.push(IPPROTO_ICMPV6);
+                    match names[2].as_str() {
+                        "errppslimit" => mib.push(14),
+                        "mtudisc_hiwat" => mib.push(16),
+                        "mtudisc_lowat" => mib.push(17),
+                        "nd6_debug" => mib.push(18),
+                        "nd6_delay" => mib.push(8),
+                        "nd6_maxnudhint" => mib.push(15),
+                        "nd6_maxtries" => mib.push(10),
+                        "nd6_umaxtries" => mib.push(9),
+                        "redirtimeout" => mib.push(17),
+                        _ => return Err(Error::invalid_argument()),
+                    }
+                },
+                "ip6" => {
+                    mib.push(IPPROTO_IPV6);
+                    match names[2].as_str() {
+                        "auto_flowlabel" => mib.push(17),
+                        "dad_count" => mib.push(16),
+                        "dad_pending" => mib.push(49),
+                        "defmcasthlim" => mib.push(18),
+                        "forwarding" => mib.push(1),
+                        "hdrnestlimit" => mib.push(15),
+                        "hlim" => mib.push(3),
+                        "ifq" => mib.push(51),
+                        "log_interval" => mib.push(14),
+                        "maxdynroutes" => mib.push(48),
+                        "maxfragpackets" => mib.push(9),
+                        "maxfrags" => mib.push(41),
+                        "mforwarding" => mib.push(42),
+                        "mtudisctimeout" => mib.push(50),
+                        "multicast_mtudisc" => mib.push(44),
+                        "multipath" => mib.push(43),
+                        "neighborgcthresh" => mib.push(45),
+                        "redirect" => mib.push(2),
+                        "soiikey" => mib.push(54),
+                        "use_deprecated" => mib.push(21),
+                        _ => return Err(Error::invalid_argument()),
+                    }
+                },
                 _ => return Err(Error::invalid_argument()),
             }
         },
-        "key" => mib.push(PF_KEY),
-        "mpls" => mib.push(PF_MPLS),
+        "key" => {
+            mib.push(PF_KEY);
+            match names[1].as_str() {
+                "sadb_dump" => mib.push(1),
+                "spd_dump" => mib.push(2),
+                _ => return Err(Error::invalid_argument()),
+            }
+        },
+        "mpls" => {
+            mib.push(PF_MPLS);
+            match names[1].as_str() {
+                "ifq" => {
+                    mib.push(3);
+                    match names[2].as_str() {
+                        "congestion" => mib.push(4),
+                        "drops" => mib.push(3),
+                        "len" => mib.push(1),
+                        "maxlen" => mib.push(2),
+                        _ => return Err(Error::invalid_argument()),
+                    }
+                },
+                "mapttl_ip" => mib.push(5),
+                "mapttl_ip6" => mib.push(6),
+                "maxloop_inkernel" => mib.push(4),
+                "ttl" => mib.push(2),
+                _ => return Err(Error::invalid_argument()),
+            }
+        },
         "pipex" => mib.push(PF_PIPEX),
         _ => return Err(Error::invalid_argument()),
     }
@@ -478,7 +725,7 @@ fn parse_mib_hw(names: &[String]) -> Result<Vec<c_int>> {
         "model" => mib.push(HW_MODEL),
         "ncpu" => mib.push(HW_NCPU),
         "byteorder" => mib.push(HW_BYTEORDER),
-        // TODO: deprecated by 64-bit version?
+        // TODO: deprecated by 64-bit version for 64-bit CPUs?
         //"physmem" => mib.push(HW_PHYSMEM),
         //"usermem" => mib.push(HW_USERMEM),
         "pagesize" => mib.push(HW_PAGESIZE),
@@ -538,15 +785,12 @@ fn parse_mib_ddb(names: &[String]) -> Result<Vec<c_int>> {
 fn parse_mib_vfs(names: &[String]) -> Result<Vec<c_int>> {
     let mut mib = Vec::new();
     match names[0].as_str() {
-        "generic" => unimplemented!(),
-        "conf" => unimplemented!(),
+        // not sure where these consts live, just using what the tree walking
+        // in modified sysctl(8) spits out
+        "mounts" => mib.push(0),
         "ffs" => {
-            mib.push(FFS);
+            mib.push(1);
             match names[1].as_str() {
-                "" => mib.push(FFS_CLUSTERREAD),
-                "" => mib.push(FFS_CLUSTERWRITE),
-                "" => mib.push(FFS_REALLOCBLKS),
-                "" => mib.push(FFS_ASYNCFREE),
                 "max_softdeps" => mib.push(FFS_MAX_SOFTDEPS),
                 "sd_tickdelay" => mib.push(FFS_SD_TICKDELAY),
                 "sd_worklist_push" => mib.push(FFS_SD_WORKLIST_PUSH),
@@ -564,7 +808,16 @@ fn parse_mib_vfs(names: &[String]) -> Result<Vec<c_int>> {
                 "dirhash_mem" => mib.push(FFS_DIRHASH_MEM),
                 _ => return Err(Error::invalid_argument()),
             }
-        }
+        },
+        "nfs" => mib.push(3),
+        "mfs" => mib.push(4),
+        "msdos" => mib.push(5),
+        "ntfs" => mib.push(7),
+        "udf" => mib.push(14),
+        "cd9660" => mib.push(15),
+        "ext2fs" => mib.push(18),
+        "fuse" => mib.push(19),
+        _ => return Err(Error::invalid_argument()),
     };
 
     Ok(mib)
