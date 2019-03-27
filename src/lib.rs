@@ -49,6 +49,10 @@ const KERN_SHMINFO_SHMMAX: c_int = 1;
 const KERN_SHMINFO_SHMMIN: c_int = 2;
 const KERN_SHMINFO_SHMMNI: c_int = 3;
 const KERN_SHMINFO_SHMSEG: c_int = 4;
+const KERN_TIMECOUNTER_CHOICE: c_int = 4;
+const KERN_TIMECOUNTER_HARDWARE: c_int = 3;
+const KERN_TIMECOUNTER_TICK: c_int = 1;
+const KERN_TIMECOUNTER_TIMESTEPWARNINGS: c_int = 2;
 const KERN_WATCHDOG_AUTO: c_int = 2;
 const KERN_WATCHDOG_PERIOD: c_int = 1;
 const KERN_WITNESS: c_int = 60;
@@ -120,6 +124,20 @@ const HW_SMT: c_int = 24;
 const HW_NCPUONLINE: c_int = 25;
 const HW_MAXID: c_int = 26;
 
+const MACHDEP_ALLOWAPERTURE: c_int = 5;
+const MACHDEP_KBDRESET: c_int = 10;
+const MACHDEP_LIDACTION: c_int = 14;
+const MACHDEP_PWRACTION: c_int = 18;
+
+const MPLSCTL_DEFTTL: c_int = 2;
+const MPLSCTL_MAPTTL_IP: c_int = 5;
+const MPLSCTL_MAPTTL_IP6: c_int = 6;
+const MPLSCTL_MAXINKLOOP: c_int = 4;
+
+const PIPEXCTL_ENABLE: c_int = 1;
+const PIPEXCTL_INQ: c_int = 2;
+const PIPEXCTL_OUTQ: c_int = 3;
+
 // net
 const AF_INET: c_int = 2;
 const AF_INET6: c_int = 24;
@@ -142,6 +160,7 @@ enum SysctlType {
     SysString,
     SysStruct,
     UInt8Slice,
+    UInt32Slice,
     UInt64Slice,
     UShortSlice,
 }
@@ -271,46 +290,46 @@ fn parse_mib_kern(names: &[String]) -> Result<Sysctl> {
         },
         "osrelease" => {
             mib.push(KERN_OSRELEASE);
-            value_type = SysctlType::SysString
+            value_type = SysctlType::SysString;
         },
         "osrevision" => mib.push(KERN_OSREV),
         "version" => {
             mib.push(KERN_VERSION);
-            value_type = SysctlType::SysString
+            value_type = SysctlType::SysString;
         },
         "maxvnodes" => {
             mib.push(KERN_MAXVNODES);
-            changeable = true
+            changeable = true;
         },
         "maxproc" => {
             mib.push(KERN_MAXPROC);
-            changeable = true
+            changeable = true;
         },
         "maxfiles" => {
             mib.push(KERN_MAXFILES);
-            changeable = true
+            changeable = true;
         },
         "argmax" => mib.push(KERN_ARGMAX),
         "securelevel" => {
             mib.push(KERN_SECURELVL);
-            changeable = true
+            changeable = true;
         },
         "hostname" => {
             mib.push(KERN_HOSTNAME);
             value_type = SysctlType::SysString;
-            changeable = true
+            changeable = true;
         },
         "hostid" => {
             mib.push(KERN_HOSTID);
-            changeable = true
+            changeable = true;
         },
         "clockrate" => {
             mib.push(KERN_CLOCKRATE);
-            value_type = SysctlType::SysStruct
+            value_type = SysctlType::SysStruct;
         },
         "profiling" => {
             mib.push(KERN_PROF);
-            value_type = SysctlType::Node
+            value_type = SysctlType::Node;
         },
         "posix1version" => mib.push(KERN_POSIX1),
         "ngroups" => mib.push(KERN_NGROUPS),
@@ -318,35 +337,35 @@ fn parse_mib_kern(names: &[String]) -> Result<Sysctl> {
         "saved_ids" => mib.push(KERN_SAVED_IDS),
         "boottime" => {
             mib.push(KERN_BOOTTIME);
-            value_type = SysctlType::SysStruct
+            value_type = SysctlType::SysStruct;
         },
         "domainname" => {
             mib.push(KERN_DOMAINNAME);
             value_type = SysctlType::SysString;
-            changeable = true
+            changeable = true;
         },
         "maxpartitions" => mib.push(KERN_MAXPARTITIONS),
         "rawpartition" => mib.push(KERN_RAWPARTITION),
         "maxthread" => {
             mib.push(KERN_MAXTHREAD);
-            changeable = true
+            changeable = true;
         },
         "nthreads" => mib.push(KERN_NTHREADS),
         "osversion" => {
             mib.push(KERN_OSVERSION);
-            value_type = SysctlType::SysString
+            value_type = SysctlType::SysString;
         },
         "somaxconn" => {
             mib.push(KERN_SOMAXCONN);
-            changeable = true
+            changeable = true;
         },
         "sominconn" => {
             mib.push(KERN_SOMINCONN);
-            changeable = true
+            changeable = true;
         },
         "nosuidcoredump" => {
             mib.push(KERN_NOSUIDCOREDUMP);
-            changeable = true
+            changeable = true;
         },
         "fsync" => mib.push(KERN_FSYNC),
         "sysvmsg" => mib.push(KERN_SYSVMSG),
@@ -358,19 +377,19 @@ fn parse_mib_kern(names: &[String]) -> Result<Sysctl> {
             match names[1].as_str() {
                 "bucket" => {
                     mib.push(KERN_MALLOC_BUCKET);
-                    value_type = SysctlType::Node
+                    value_type = SysctlType::Node;
                 },
                 "buckets" => {
                     mib.push(KERN_MALLOC_BUCKETS);
-                    value_type = SysctlType::SysString
+                    value_type = SysctlType::SysString;
                 },
                 "kmemnames" => {
                     mib.push(KERN_MALLOC_KMEMNAMES);
-                    value_type = SysctlType::SysString
+                    value_type = SysctlType::SysString;
                 },
                 "kmemstat" => {
                     mib.push(KERN_MALLOC_KMEMSTAT);
-                    value_type = SysctlType::Node
+                    value_type = SysctlType::Node;
                 },
                 _ => return Err(Error::invalid_argument()),
             }
@@ -428,45 +447,45 @@ fn parse_mib_kern(names: &[String]) -> Result<Sysctl> {
         "sysvipc_info" => mib.push(KERN_SYSVIPC_INFO),
         "allowkmem" => {
             mib.push(KERN_ALLOWKMEM);
-            changeable = true
+            changeable = true;
         },
         "splassert" => {
             mib.push(KERN_SPLASSERT);
-            changeable = true
+            changeable = true;
         },
         "procargs" => {
             mib.push(KERN_PROC_ARGS);
-            value_type = SysctlType::Node
+            value_type = SysctlType::Node;
         },
         "nfiles" => mib.push(KERN_NFILES),
         "ttycount" => mib.push(KERN_TTYCOUNT),
         "numvnodes" => mib.push(KERN_NUMVNODES),
         "mbstat" => {
             mib.push(KERN_MBSTAT);
-            value_type = SysctlType::SysStruct
+            value_type = SysctlType::SysStruct;
         },
         "witness" => {
             mib.push(KERN_WITNESS);
-            value_type = SysctlType::Node
+            value_type = SysctlType::Node;
         },
         "seminfo" => {
             mib.push(KERN_SEMINFO);
             match names[1].as_str() {
                 "semmni" => {
                     mib.push(KERN_SEMINFO_SEMMNI);
-                    changeable = true
+                    changeable = true;
                 },
                 "semmns" => {
                     mib.push(KERN_SEMINFO_SEMMNS);
-                    changeable = true
+                    changeable = true;
                 },
                 "semmsl" => {
                     mib.push(KERN_SEMINFO_SEMMSL);
-                    changeable = true
+                    changeable = true;
                 },
                 "semopm" => {
                     mib.push(KERN_SEMINFO_SEMOPM);
-                    changeable = true
+                    changeable = true;
                 },
                 "semume" => mib.push(KERN_SEMINFO_SEMUME),
                 "semusz" => mib.push(KERN_SEMINFO_SEMUSZ),
@@ -496,14 +515,14 @@ fn parse_mib_kern(names: &[String]) -> Result<Sysctl> {
                 },
                 "shmall" => {
                     mib.push(KERN_SHMINFO_SHMALL);
-                    changeable = true
+                    changeable = true;
                 },
                 _ => return Err(Error::invalid_argument()),
             }
         },
         "intrcnt" => {
             mib.push(KERN_INTRCNT);
-            value_type = SysctlType::Node
+            value_type = SysctlType::Node;
         },
         "watchdog" => {
             mib.push(KERN_WATCHDOG);
@@ -514,6 +533,7 @@ fn parse_mib_kern(names: &[String]) -> Result<Sysctl> {
                 _ => return Err(Error::invalid_argument()),
             }
         },
+        // TODO
         "proc" => {
             mib.push(KERN_PROC);
             match names[1].as_str() {
@@ -521,26 +541,56 @@ fn parse_mib_kern(names: &[String]) -> Result<Sysctl> {
                 _ => return Err(Error::invalid_argument()),
             }
         },
-        "maxclusters" => mib.push(KERN_MAXCLUSTERS),
+        "maxclusters" => {
+            mib.push(KERN_MAXCLUSTERS);
+            changeable = true;
+        },
         // TODO
         "evcount" => mib.push(KERN_EVCOUNT),
         "timecounter" => {
             mib.push(KERN_TIMECOUNTER);
             match names[1].as_str() {
-                "tick" => unimplemented!(),
-                "timestepwarnings" => unimplemented!(),
-                "hardware" => unimplemented!(),
-                "choice" => unimplemented!(),
+                "tick" => mib.push(KERN_TIMECOUNTER_TICK),
+                "timestepwarnings" => {
+                    mib.push(KERN_TIMECOUNTER_TIMESTEPWARNINGS);
+                    changeable = true;
+                },
+                "hardware" => {
+                    mib.push(KERN_TIMECOUNTER_HARDWARE);
+                    value_type = SysctlType::SysString;
+                    changeable = true;
+                },
+                "choice" => {
+                    mib.push(KERN_TIMECOUNTER_CHOICE);
+                    value_type = SysctlType::SysString;
+                },
                 _ => return Err(Error::invalid_argument()),
             }
         },
-        "maxlocksperuid" => mib.push(KERN_MAXLOCKSPERUID),
-        // TODO
-        "cp_time2" => mib.push(KERN_CPTIME2),
-        "bufcachepercent" => mib.push(KERN_CACHEPCT),
-        "file" => mib.push(KERN_FILE),
-        "wxabort" => mib.push(KERN_WXABORT),
-        "consdev" => mib.push(KERN_CONSDEV),
+        "maxlocksperuid" => {
+            mib.push(KERN_MAXLOCKSPERUID);
+            changeable = true;
+        },
+        "cp_time2" => {
+            mib.push(KERN_CPTIME2);
+            value_type = SysctlType::UInt64Slice;
+        },
+        "bufcachepercent" => {
+            mib.push(KERN_CACHEPCT);
+            changeable = true;
+        },
+        "file" => {
+            mib.push(KERN_FILE);
+            value_type = SysctlType::SysStruct;
+        },
+        "wxabort" => {
+            mib.push(KERN_WXABORT);
+            changeable = true;
+        },
+        "consdev" => {
+            mib.push(KERN_CONSDEV);
+            value_type = SysctlType::DevT;
+        },
         "netlivelocks" => mib.push(KERN_NETLIVELOCKS),
         "pool_debug" => mib.push(KERN_POOL_DEBUG),
         // TODO
@@ -557,7 +607,7 @@ fn parse_mib_kern(names: &[String]) -> Result<Sysctl> {
             match names[1].as_str() {
                 "record" => {
                     mib.push(KERN_AUDIO_RECORD);
-                    changeable = true
+                    changeable = true;
                 },
                 _ => return Err(Error::invalid_argument()),
             }
@@ -639,6 +689,7 @@ fn parse_mib_net(names: &[String]) -> Result<Sysctl> {
         // TODO: parse the args that can get passed here
         "inet" => {
             mib.push(PF_INET);
+            changeable = true;
             match names[1].as_str() {
                 "ah" => {
                     mib.push(IPPROTO_AH);
@@ -709,7 +760,11 @@ fn parse_mib_net(names: &[String]) -> Result<Sysctl> {
                         "maskrepl" => mib.push(1),
                         "rediraccept" => mib.push(4),
                         "redirtimeout" => mib.push(5),
-                        "stats" => mib.push(7),
+                        "stats" => {
+                            mib.push(7);
+                            value_type = SysctlType::SysStruct;
+                            changeable = false;
+                        },
                         "tstamprepl" => mib.push(6),
                         _ => return Err(Error::invalid_argument()),
                     }
@@ -724,6 +779,7 @@ fn parse_mib_net(names: &[String]) -> Result<Sysctl> {
                         "forwarding" => mib.push(1),
                         "ifq" => {
                             mib.push(30);
+                            value_type = SysctlType::Node;
                             match names[3].as_str() {
                                 "congestion" => mib.push(4),
                                 "drops" => mib.push(3),
@@ -733,10 +789,19 @@ fn parse_mib_net(names: &[String]) -> Result<Sysctl> {
                             }
                         },
                         "ipsec-allocs" => mib.push(18),
-                        "ipsec-auth-alg" => mib.push(26),
+                        "ipsec-auth-alg" => {
+                            mib.push(26);
+                            value_type = SysctlType::SysString;
+                        },
                         "ipsec-bytes" => mib.push(20),
-                        "ipsec-comp-alg" => mib.push(29),
-                        "ipsec-enc-alg" => mib.push(25),
+                        "ipsec-comp-alg" => {
+                            mib.push(29);
+                            value_type = SysctlType::SysString;
+                        },
+                        "ipsec-enc-alg" => {
+                            mib.push(25);
+                            value_type = SysctlType::SysString;
+                        },
                         "ipsec-expire-acquire" => mib.push(14),
                         "ipsec-firstuse" => mib.push(24),
                         "ipsec-invalid-life" => mib.push(15),
@@ -757,7 +822,11 @@ fn parse_mib_net(names: &[String]) -> Result<Sysctl> {
                         "portlast" => mib.push(8),
                         "redirect" => mib.push(2),
                         "sourceroute" => mib.push(5),
-                        "stats" => mib.push(33),
+                        "stats" => {
+                            mib.push(33);
+                            value_type = SysctlType::SysStruct;
+                            changeable = false;
+                        },
                         "ttl" => mib.push(3),
                         _ => return Err(Error::invalid_argument()),
                     }
@@ -790,10 +859,17 @@ fn parse_mib_net(names: &[String]) -> Result<Sysctl> {
                     match names[2].as_str() {
                         "ackonpush" => mib.push(13),
                         "always_keepalive" => mib.push(16),
-                        "baddynamic" => mib.push(6),
+                        "baddynamic" => {
+                            mib.push(6);
+                            value_type = SysctlType::UInt32Slice;
+                        },
                         "drop" => mib.push(19),
                         "ecn" => mib.push(14),
-                        "ident" => mib.push(9),
+                        "ident" => {
+                            mib.push(9);
+                            value_type = SysctlType::SysStruct;
+                            changeable = false;
+                        },
                         "keepidle" => mib.push(3),
                         "keepinittime" => mib.push(2),
                         "keepintvl" => mib.push(4),
@@ -801,12 +877,21 @@ fn parse_mib_net(names: &[String]) -> Result<Sysctl> {
                         "reasslimit" => mib.push(18),
                         "rfc1323" => mib.push(1),
                         "rfc3390" => mib.push(17),
-                        "rootonly" => mib.push(24),
+                        "rootonly" => {
+                            mib.push(24);
+                            value_type = SysctlType::UInt32Slice;
+                        },
                         "rstppslimit" => mib.push(12),
                         "sack" => mib.push(10),
                         "sackholelimit" => mib.push(20),
-                        "slowhz" => mib.push(5),
-                        "stats" => mib.push(21),
+                        "slowhz" => {
+                            mib.push(5);
+                            changeable = false;
+                        },
+                        "stats" => {
+                            mib.push(21);
+                            value_type = SysctlType::SysStruct;
+                        },
                         "synbucketlimit" => mib.push(16),
                         "syncachelimit" => mib.push(15),
                         "synhashsize" => mib.push(25),
@@ -817,12 +902,22 @@ fn parse_mib_net(names: &[String]) -> Result<Sysctl> {
                 "udp" => {
                     mib.push(IPPROTO_UDP);
                     match names[2].as_str() {
-                        "baddynamic" => mib.push(2),
+                        "baddynamic" => {
+                            mib.push(2);
+                            value_type = SysctlType::UInt32Slice;
+                        },
                         "checksum" => mib.push(1),
                         "recvspace" => mib.push(3),
-                        "rootonly" => mib.push(6),
+                        "rootonly" => {
+                            mib.push(6);
+                            value_type = SysctlType::UInt32Slice;
+                        },
                         "sendspace" => mib.push(4),
-                        "stats" => mib.push(5),
+                        "stats" => {
+                            mib.push(5);
+                            value_type = SysctlType::SysStruct;
+                            changeable = false;
+                        },
                         _ => return Err(Error::invalid_argument()),
                     }
                 },
@@ -831,6 +926,7 @@ fn parse_mib_net(names: &[String]) -> Result<Sysctl> {
         },
         "inet6" => {
             mib.push(PF_INET6);
+            changeable = true;
             match names[1].as_str() {
                 "divert" => {
                     mib.push(IPPROTO_DIVERT);
@@ -866,7 +962,11 @@ fn parse_mib_net(names: &[String]) -> Result<Sysctl> {
                         "forwarding" => mib.push(1),
                         "hdrnestlimit" => mib.push(15),
                         "hlim" => mib.push(3),
-                        "ifq" => mib.push(51),
+                        "ifq" => {
+                            mib.push(51);
+                            value_type = SysctlType::Node;
+                            changeable = false;
+                        },
                         "log_interval" => mib.push(14),
                         "maxdynroutes" => mib.push(48),
                         "maxfragpackets" => mib.push(9),
@@ -877,7 +977,10 @@ fn parse_mib_net(names: &[String]) -> Result<Sysctl> {
                         "multipath" => mib.push(43),
                         "neighborgcthresh" => mib.push(45),
                         "redirect" => mib.push(2),
-                        "soiikey" => mib.push(54),
+                        "soiikey" => {
+                            mib.push(54);
+                            value_type = SysctlType::UInt8Slice;
+                        },
                         "use_deprecated" => mib.push(21),
                         _ => return Err(Error::invalid_argument()),
                     }
@@ -895,25 +998,69 @@ fn parse_mib_net(names: &[String]) -> Result<Sysctl> {
         },
         "mpls" => {
             mib.push(PF_MPLS);
+            changeable = true;
             match names[1].as_str() {
-                "ifq" => {
-                    mib.push(3);
-                    match names[2].as_str() {
-                        "congestion" => mib.push(4),
-                        "drops" => mib.push(3),
-                        "len" => mib.push(1),
-                        "maxlen" => mib.push(2),
-                        _ => return Err(Error::invalid_argument()),
-                    }
-                },
-                "mapttl_ip" => mib.push(5),
-                "mapttl_ip6" => mib.push(6),
-                "maxloop_inkernel" => mib.push(4),
-                "ttl" => mib.push(2),
+                //"ifq" => {
+                //    mib.push(3);
+                //    match names[2].as_str() {
+                //        "congestion" => mib.push(4),
+                //        "drops" => mib.push(3),
+                //        "len" => mib.push(1),
+                //        "maxlen" => mib.push(2),
+                //        _ => return Err(Error::invalid_argument()),
+                //    }
+                //},
+                "mapttl_ip" => mib.push(MPLSCTL_MAPTTL_IP),
+                "mapttl_ip6" => mib.push(MPLSCTL_MAPTTL_IP6),
+                "maxloop_inkernel" => mib.push(MPLSCTL_MAXINKLOOP),
+                "ttl" => mib.push(MPLSCTL_DEFTTL),
                 _ => return Err(Error::invalid_argument()),
             }
         },
-        "pipex" => mib.push(PF_PIPEX),
+        "pipex" => {
+            mib.push(PF_PIPEX);
+            match names[1].as_str() {
+                "enable" => {
+                    mib.push(PIPEXCTL_ENABLE);
+                    changeable = true;
+                },
+                "inq" => {
+                    mib.push(PIPEXCTL_INQ);
+                    match names[2].as_str() {
+                        "ifq" => {
+                            mib.push(30);
+                            value_type = SysctlType::Node;
+                            match names[3].as_str() {
+                                "congestion" => mib.push(4),
+                                "drops" => mib.push(3),
+                                "len" => mib.push(1),
+                                "maxlen" => mib.push(2),
+                                _ => return Err(Error::invalid_argument()),
+                            }
+                        },
+                        _ => return Err(Error::invalid_argument()),
+                    }
+                },
+                "outq" => {
+                    mib.push(PIPEXCTL_OUTQ);
+                    match names[3].as_str() {
+                        "ifq" => {
+                            mib.push(30);
+                            value_type = SysctlType::Node;
+                            match names[3].as_str() {
+                                "congestion" => mib.push(4),
+                                "drops" => mib.push(3),
+                                "len" => mib.push(1),
+                                "maxlen" => mib.push(2),
+                                _ => return Err(Error::invalid_argument()),
+                            }
+                        },
+                        _ => return Err(Error::invalid_argument()),
+                    }
+                },
+                _ => return Err(Error::invalid_argument()),
+            }
+        },
         _ => return Err(Error::invalid_argument()),
     }
 
@@ -946,11 +1093,11 @@ fn parse_mib_hw(names: &[String]) -> Result<Sysctl> {
     match names[0].as_str() {
         "machine" => {
             mib.push(HW_MACHINE);
-            value_type = SysctlType::SysString
+            value_type = SysctlType::SysString;
         },
         "model" => {
             mib.push(HW_MODEL);
-            value_type = SysctlType::SysString
+            value_type = SysctlType::SysString;
         },
         "ncpu" => mib.push(HW_NCPU),
         "byteorder" => mib.push(HW_BYTEORDER),
@@ -960,16 +1107,16 @@ fn parse_mib_hw(names: &[String]) -> Result<Sysctl> {
         "pagesize" => mib.push(HW_PAGESIZE),
         "disknames" => {
             mib.push(HW_DISKNAMES);
-            value_type = SysctlType::SysString
+            value_type = SysctlType::SysString;
         },
         "diskstats" => {
             mib.push(HW_DISKSTATS);
-            value_type = SysctlType::SysStruct
+            value_type = SysctlType::SysStruct;
         },
         "diskcount" => mib.push(HW_DISKCOUNT),
         "sensors" => {
             mib.push(HW_SENSORS);
-            value_type = SysctlType::Node
+            value_type = SysctlType::Node;
         },
         "cpuspeed" => mib.push(HW_CPUSPEED),
         "setperf" => {
@@ -978,28 +1125,28 @@ fn parse_mib_hw(names: &[String]) -> Result<Sysctl> {
         },
         "vendor" => {
             mib.push(HW_VENDOR);
-            value_type = SysctlType::SysString
+            value_type = SysctlType::SysString;
         },
         "product" => {
             mib.push(HW_PRODUCT);
-            value_type = SysctlType::SysString
+            value_type = SysctlType::SysString;
         },
         "version" => {
             mib.push(HW_VERSION);
-            value_type = SysctlType::SysString
+            value_type = SysctlType::SysString;
         },
         "serialno" => mib.push(HW_SERIALNO),
         "uuid" => {
             mib.push(HW_UUID);
-            value_type = SysctlType::SysString
+            value_type = SysctlType::SysString;
         },
         "physmem" => {
             mib.push(HW_PHYSMEM64);
-            value_type = SysctlType::Int64
+            value_type = SysctlType::Int64;
         },
         "usermem" => {
             mib.push(HW_USERMEM64);
-            value_type = SysctlType::Int64
+            value_type = SysctlType::Int64;
         },
         "npcufound" => mib.push(HW_NCPUFOUND),
         "allowpowerdown" => {
@@ -1009,7 +1156,7 @@ fn parse_mib_hw(names: &[String]) -> Result<Sysctl> {
         "perfpolicy" => {
             mib.push(HW_PERFPOLICY);
             value_type = SysctlType::SysString;
-            changeable = true
+            changeable = true;
         },
         "smt" => {
             mib.push(HW_SMT);
@@ -1026,14 +1173,19 @@ fn parse_mib_hw(names: &[String]) -> Result<Sysctl> {
 
 fn parse_mib_machdep(names: &[String]) -> Result<Sysctl> {
     let mut mib = vec![CTL_MACHDEP as c_int];
-    let mut value_type = SysctlType::Int32;
-    let mut changeable = false;
 
+    // since these are machine-dependent, not every one will be available
+    // on every piece of hardware, so I'm gonna just do amd64, which is the
+    // only OpenBSD platform Rust builds on arfaict?
     match names[0].as_str() {
+        "allowaperture" => mib.push(MACHDEP_ALLOWAPERTURE),
+        "kbdreset" => mib.push(MACHDEP_KBDRESET),
+        "lidaction" => mib.push(MACHDEP_LIDACTION),
+        "pwraction" => mib.push(MACHDEP_PWRACTION),
         _ => return Err(Error::invalid_argument()),
     };
 
-    let res = Sysctl::new(mib, value_type, changeable)?;
+    let res = Sysctl::new(mib, SysctlType::Int32, true)?;
 
     Ok(res)
 }
