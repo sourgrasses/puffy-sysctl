@@ -1,7 +1,7 @@
 //! Hopefully some helpful functions and other stuff for making
 //! [`sysctl(2)`](https://man.openbsd.org/sysctl.2) calls on OpenBSD.
 //!
-//!```
+//!```text
 //!       _____
 //!     \-     -/        ________
 //!  \_/         \      /        \
@@ -14,13 +14,10 @@
 //! Calling `sysctl` can be scary, dear reader. There's `unsafe` and `void*`,
 //! and that means letting go of type safety and borrow checking, two of our
 //! best Rust friends! Fortunately we can use macros and careful manual type
-//! checking to provide simlar guarantees to ourselves and expose a way to make
+//! checking to provide better guarantees to ourselves and expose a way to make
 //! relatively safe `sysctl` calls.
 #![allow(dead_code, unused_variables)]
-mod value;
-
-use crate::value::SysctlValue;
-
+pub use libc;
 use libc::*;
 use nix::Error;
 
@@ -92,6 +89,11 @@ const FFS_DIRHASH_MAXMEM: c_int = 18;
 const FFS_DIRHASH_MEM: c_int = 19;
 const FFS_MAXID: c_int = 20;
 
+const FUSEFS_INBUFS: c_int = 2;
+const FUSEFS_OPENDEVS: c_int = 1;
+const FUSEFS_POOL_NBPAGES: c_int = 4;
+const FUSEFS_WAITBUFS: c_int = 3;
+
 const FS_POSIX: c_int = 1;
 const FS_POSIX_SETUID: c_int = 1;
 
@@ -134,9 +136,25 @@ const MPLSCTL_MAPTTL_IP: c_int = 5;
 const MPLSCTL_MAPTTL_IP6: c_int = 6;
 const MPLSCTL_MAXINKLOOP: c_int = 4;
 
+const NFS_NFSSTATS: c_int = 1;
+const NFS_NIOTHREADS: c_int = 2;
+
 const PIPEXCTL_ENABLE: c_int = 1;
 const PIPEXCTL_INQ: c_int = 2;
 const PIPEXCTL_OUTQ: c_int = 3;
+
+const VM_ANONMIN: c_int = 7;
+const VM_LOADAVG: c_int = 2;
+const VM_MALLOC_CONF: c_int = 12;
+const VM_MAXSLP: c_int = 10;
+const VM_METER: c_int = 1;
+const VM_NKMEMPAGES: c_int = 6;
+const VM_PSSTRINGS: c_int = 3;
+const VM_SWAPENCRYPT: c_int = 5;
+const VM_USPACE: c_int = 11;
+const VM_UVMEXP: c_int = 4;
+const VM_VNODEMIN: c_int = 9;
+const VM_VTEXTMIN: c_int = 8;
 
 // net
 const AF_INET: c_int = 2;
@@ -172,85 +190,89 @@ struct Sysctl {
     changeable: bool,
 }
 
+/// ```
+/// let mut buf = vec![0u8; libc::CTL_MAXNAME as usize];
+/// ```
 #[macro_export]
-macro_rules! sysctl {
-    ($sysctl_name:expr) => {
-        // easy peasy
-        sysctl_raw($sysctl_name, None)
-    };
-    ($sysctl_name:expr, $newp:expr) => {
-        // cast argument as &Any so we can use Rust's dynamic typing emulation
-        // to do our own basic type checking
-        let t_check = &$newp as &Any;
-        match types::get_sysctl_type($sysctl) {
-            "dev_t" => ,
-            "int64_t" => {
-                if t_check.is::<i64>() {
-                    sysctl_raw($sysctl_name, None);
-                } else {
-                }
-            },
-            "integer" => {
-                if t_check.is::<i32>() {
-                } else {
-                }
-            },
-            "long" => {
-                if t_check.is::<i64>() {
-                } else {
-                }
-            },
-            "node" => ,
-            "string" => {
-                if t_check.is::<String>() {
-                } else {
-                }
-            },
-            "struct" => ,
-            "u_int8_t[]" => {
-                if t_check.is::<&[u8]>() {
-                } else {
-                }
-            },
-            "u_int64_t[]" => {
-                if t_check.is::<&[u64]>() {
-                } else {
-                }
-            },
-            "u_short[]" => {
-                if t_check.is::<&[u16]>() {
-                } else {
-                }
-            },
-        };
-        sysctl_raw($sysctl_name, $newp)
+macro_rules! sysctl_read {
+    ($fn_name:ident, $sysctl_name:expr, $ty:ty) => {
+        pub unsafe fn $fn_name(oldp: &mut $ty) -> $crate::Result<()> {
+            $crate::sysctl_raw($sysctl_name,
+                               oldp.as_mut_ptr() as *mut $crate::libc::c_void,
+                               std::ptr::null_mut())?;
+            Ok(())
+        }
     };
 }
 
-fn sysctl_raw<S: SysctlValue>(name: &str, mut newp: Option<S>) -> Result<Option<S>> {
+#[macro_export]
+macro_rules! sysctl_write {
+    ($fn_name:ident, $sysctl_name:expr, $ty:ty) => {
+        pub unsafe fn $fn_name(oldp: &mut $ty, newp: &mut $ty) -> $crate::Result<()> {
+            $crate::sysctl_raw($sysctl_name,
+                               std::ptr::null_mut(),
+                               oldp.as_mut_ptr() as *mut $crate::libc::c_void)?;
+            Ok(())
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! sysctl_readwrite {
+    ($fn_name:ident, $sysctl_name:expr, $ty:ty) => {
+        pub unsafe fn $fn_name(oldp: &mut $ty, newp: &mut $ty) -> $crate::Result<()> {
+            $crate::sysctl_raw($sysctl_name,
+                               oldp.as_mut_ptr() as *mut $crate::libc::c_void,
+                               newp.as_mut_ptr() as *mut $crate::libc::c_void)?;
+            Ok(())
+        }
+    };
+}
+
+pub fn sysctl_raw(name: &str, oldp: *mut c_void, newp: *mut c_void) -> Result<()> {
     // Management Information Base-style name
     let sysctl_s = parse_mib_str(name)?;
-    let snewp: *mut _ = match &mut newp {
-        Some(snewp) => snewp,
-        None => ptr::null_mut(),
-    };
-    let mut buf = vec![0 as c_int; CTL_MAXNAME as usize];
 
+    let mut len = mem::size_of::<*mut c_void>();
     let mib_len = sysctl_s.mib.len();
     let newp_len = CTL_MAXNAME as usize * mem::size_of::<*mut c_void>();
-    unsafe {
-        libc::sysctl(sysctl_s.mib.as_ptr(),
-                     mib_len as u32,
-                     buf.as_mut_ptr() as *mut c_void,
-                     &mut buf.len(),
-                     snewp as *mut c_void,
-                     newp_len);
+
+    // if we're getting a string we have to get the length from sysctl before
+    // actually passing in the buffer we want the string written to and 
+    // allocate space for the buffer based on that
+    if sysctl_s.value_type == SysctlType::SysString {
+        let res = unsafe {
+            libc::sysctl(sysctl_s.mib.as_ptr(),
+                         mib_len as u32,
+                         ptr::null_mut() as *mut c_void,
+                         &mut len,
+                         ptr::null_mut() as *mut c_void,
+                         0)
+        };
+
+        if res < 0 {
+            let e = nix::errno::errno();
+            return Err(Error::Sys(nix::errno::from_i32(e)));
+        }
     }
 
-    unimplemented!()
+    let res = unsafe {
+        libc::sysctl(sysctl_s.mib.as_ptr(),
+                     mib_len as u32,
+                     oldp,
+                     &mut len,
+                     newp,
+                     newp_len)
+    };
+
+    if res < 0 {
+        let e = nix::errno::errno();
+        Err(Error::Sys(nix::errno::from_i32(e)))
+    } else {
+        Ok(())
+    }
 }
 
-#[cfg(target_os = "openbsd")]
 fn parse_mib_str(name: &str) -> Result<Sysctl> {
     let args: Vec<String> = name
         .split(|c| c == '=' || c == '.')
@@ -626,6 +648,47 @@ fn parse_mib_vm(names: &[String]) -> Result<Sysctl> {
     let mut changeable = false;
 
     match names[0].as_str() {
+        "vmmeter" => {
+            mib.push(VM_METER);
+            value_type = SysctlType::SysStruct;
+        },
+        "loadavg" => {
+            mib.push(VM_LOADAVG);
+            value_type = SysctlType::SysStruct;
+        },
+        "psstrings" => {
+            mib.push(VM_PSSTRINGS);
+            value_type = SysctlType::SysStruct;
+        },
+        "uvmexp" => {
+            mib.push(VM_UVMEXP);
+            value_type = SysctlType::SysStruct;
+        },
+        "swapencrypt" => {
+            mib.push(VM_SWAPENCRYPT);
+            value_type = SysctlType::SysStruct;
+            changeable = true;
+        },
+        "nkmempages" => mib.push(VM_NKMEMPAGES),
+        "anonmin" => {
+            mib.push(VM_ANONMIN);
+            changeable = true;
+        },
+        "vtextmin" => {
+            mib.push(VM_VTEXTMIN);
+            changeable = true;
+        },
+        "vnodemin" => {
+            mib.push(VM_VNODEMIN);
+            changeable = true;
+        },
+        "maxslp" => mib.push(VM_MAXSLP),
+        "uspace" => mib.push(VM_USPACE),
+        "malloc_conf" => {
+            mib.push(VM_MALLOC_CONF);
+            value_type = SysctlType::SysString;
+            changeable = true;
+        },
         _ => return Err(Error::invalid_argument()),
     };
 
@@ -1215,13 +1278,13 @@ fn parse_mib_vfs(names: &[String]) -> Result<Sysctl> {
     let mut mib = vec![CTL_VFS as c_int];
     let mut value_type = SysctlType::Int32;
     let mut changeable = false;
-
-    match names[0].as_str() {
+match names[0].as_str() {
         // not sure where these consts live, just using what the tree walking
         // in modified sysctl(8) spits out
         "mounts" => mib.push(0),
         "ffs" => {
             mib.push(1);
+            changeable = true;
             match names[1].as_str() {
                 "max_softdeps" => mib.push(FFS_MAX_SOFTDEPS),
                 "sd_tickdelay" => mib.push(FFS_SD_TICKDELAY),
@@ -1237,18 +1300,41 @@ fn parse_mib_vfs(names: &[String]) -> Result<Sysctl> {
                 "sd_dir_entry" => mib.push(FFS_SD_DIR_ENTRY),
                 "dirhash_dirsize" => mib.push(FFS_DIRHASH_DIRSIZE),
                 "dirhash_maxmem" => mib.push(FFS_DIRHASH_MAXMEM),
-                "dirhash_mem" => mib.push(FFS_DIRHASH_MEM),
+                "dirhash_mem" => {
+                    mib.push(FFS_DIRHASH_MEM);
+                    changeable = false;
+                },
                 _ => return Err(Error::invalid_argument()),
             }
         },
-        "nfs" => mib.push(3),
+        "nfs" => {
+            mib.push(3);
+            changeable = true;
+            match names[1].as_str() {
+                "nfsstats" => {
+                    mib.push(NFS_NFSSTATS);
+                    value_type = SysctlType::SysStruct;
+                },
+                "iothreads" => mib.push(NFS_NIOTHREADS),
+                _ => return Err(Error::invalid_argument()),
+            }
+        },
         "mfs" => mib.push(4),
         "msdos" => mib.push(5),
         "ntfs" => mib.push(7),
         "udf" => mib.push(14),
         "cd9660" => mib.push(15),
         "ext2fs" => mib.push(18),
-        "fuse" => mib.push(19),
+        "fuse" => {
+            mib.push(19);
+            match names[1].as_str() {
+                "fusefs_open_devices" => mib.push(FUSEFS_OPENDEVS),
+                "fusefs_fbufs_in" => mib.push(FUSEFS_INBUFS),
+                "fusefs_fbufs_wait" => mib.push(FUSEFS_WAITBUFS),
+                "fusefs_pool_pages" => mib.push(FUSEFS_POOL_NBPAGES),
+                _ => return Err(Error::invalid_argument()),
+            }
+        },
         _ => return Err(Error::invalid_argument()),
     };
 
@@ -1310,11 +1396,14 @@ impl Sysctl {
 
 #[cfg(test)]
 mod tests {
-    use crate::{parse_mib_str, sysctl};
-
     #[test]
-    fn parse_net() {
-        let res = parse_mib_str("net.inet.tcp.stats").unwrap();
-        assert_eq!(res, vec![4, 2, 6, 21]);
+    fn call_sysctl() {
+        sysctl_read!(get_kern_ostype, "kern.ostype", Vec<u8>);
+
+        let mut buf = vec![0u8; 256];
+        unsafe { get_kern_ostype(&mut buf).unwrap() };
+        buf.dedup_by(|a, b| *a == *b && *b == b'\0');
+
+        assert_eq!(String::from_utf8(buf).unwrap().as_str(), "OpenBSD\0");
     }
 }
